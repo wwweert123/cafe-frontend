@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the interface for a Cafe
 interface Cafe {
@@ -10,16 +10,28 @@ interface Cafe {
     logo?: string; // Optional logo field
 }
 
-function IndexComponent() {
-    const [cafes, setCafes] = useState<Cafe[]>([]);
+// Fetcher function to get cafes data
+const fetchCafes = async (): Promise<Cafe[]> => {
+    const response = await fetch("http://localhost:3500/cafes");
+    if (!response.ok) {
+        throw new Error("Error fetching cafes");
+    }
+    return response.json();
+};
 
-    useEffect(() => {
-        // Fetch cafes from the backend
-        fetch("http://127.0.0.1:3500/cafes")
-            .then((response) => response.json())
-            .then((data) => setCafes(data))
-            .catch((error) => console.error("Error fetching cafes:", error));
-    }, []);
+const CafeComponent: React.FC = () => {
+    // Use the useQuery hook to fetch and cache cafes data
+    const {
+        data: cafes,
+        error,
+        isLoading,
+    } = useQuery({
+        queryKey: ["cafes"],
+        queryFn: fetchCafes,
+    });
+
+    if (isLoading) return <div>Loading...</div>;
+    if (error instanceof Error) return <div>Error: {error.message}</div>;
 
     return (
         <div>
@@ -27,7 +39,7 @@ function IndexComponent() {
             <div>
                 <h1>Cafes</h1>
                 <ul>
-                    {cafes.map((cafe) => (
+                    {cafes?.map((cafe) => (
                         <li key={cafe.id}>
                             <strong>{cafe.name}</strong> - {cafe.description} (
                             {cafe.location})
@@ -37,8 +49,8 @@ function IndexComponent() {
             </div>
         </div>
     );
-}
+};
 
 export const Route = createFileRoute("/")({
-    component: IndexComponent,
+    component: CafeComponent,
 });
