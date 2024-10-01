@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
 import { Button } from "@mui/material";
 import EmployeeFormDialog from "../components/EmployeeFormDialog";
+import DeleteConfirmationDialog from "../components/DeleteConfirmationDialog";
 
 // Define the interface for an Employee
 interface Employee {
@@ -49,6 +50,9 @@ const EmployeesPage: React.FC = () => {
         null
     );
 
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [employeeToDelete, setEmployeeToDelete] = useState<any | null>(null);
+
     const queryClient = useQueryClient();
 
     // Employee Form Dialog
@@ -78,7 +82,9 @@ const EmployeesPage: React.FC = () => {
                         <button onClick={() => handleEdit(params.data)}>
                             Edit
                         </button>
-                        <button onClick={() => handleDelete(params.data.id)}>
+                        <button
+                            onClick={() => handleOpenDeleteDialog(params.data)}
+                        >
                             Delete
                         </button>
                     </div>
@@ -91,10 +97,6 @@ const EmployeesPage: React.FC = () => {
     // Handlers for edit and delete actions
     const handleEdit = (data: Employee) => {
         console.log("Edit clicked for:", data);
-    };
-
-    const handleDelete = (id: string) => {
-        console.log("Delete clicked for ID:", id);
     };
 
     // Handle form submission for adding or editing an employee
@@ -131,6 +133,39 @@ const EmployeesPage: React.FC = () => {
         setSelectedEmployee(null);
     };
 
+    // Open the Delete Confirmation Dialog
+    const handleOpenDeleteDialog = (employee: any) => {
+        setEmployeeToDelete(employee);
+        setOpenDeleteDialog(true); // Open the delete confirmation dialog
+    };
+
+    // Handle Confirming the Delete
+    const handleDeleteConfirm = async () => {
+        if (!employeeToDelete) return;
+
+        try {
+            const response = await fetch(
+                `http://localhost:3500/employees/${employeeToDelete.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to delete employee");
+            }
+
+            // Refetch the employee data after deleting
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+        } catch (error) {
+            console.error("Error deleting employee:", error);
+        }
+
+        // Reset delete state after deletion
+        setOpenDeleteDialog(false);
+        setEmployeeToDelete(null);
+    };
+
     if (isLoading || isLoadingCafes) return <div>Loading...</div>;
     if (error instanceof Error || cafesError instanceof Error)
         return (
@@ -160,6 +195,12 @@ const EmployeesPage: React.FC = () => {
                 onSubmit={handleFormSubmit}
                 cafes={cafes} // Pass cafes to the form dropdown
                 employeeData={selectedEmployee} // Pass selected employee for editing
+            />
+            <DeleteConfirmationDialog
+                open={openDeleteDialog}
+                onClose={() => setOpenDeleteDialog(false)}
+                onConfirm={handleDeleteConfirm}
+                itemName={employeeToDelete ? employeeToDelete.name : "Employee"}
             />
         </div>
     );
