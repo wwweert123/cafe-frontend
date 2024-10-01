@@ -6,7 +6,9 @@ export const Route = createRootRoute({
         <React.Fragment>
             <nav>
                 <Link to="/">Cafes</Link> |{" "}
-                <Link to="/employee">Employees</Link>
+                <Link to="/employee/$id" params={{ id: "all" }}>
+                    Employees
+                </Link>
             </nav>
             <hr />
             <Outlet />

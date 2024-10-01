@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
 import { Button } from "@mui/material";
 import EmployeeFormDialog from "../components/EmployeeFormDialog";
 import DeleteConfirmationDialog from "../components/DeleteConfirmationDialog";
+import { getRouteApi } from "@tanstack/react-router";
+
+const route = getRouteApi("/employee/$id");
 
 // Define the interface for an Employee
 interface Employee {
@@ -16,8 +18,12 @@ interface Employee {
 }
 
 // Fetcher function to get employees data
-const fetchEmployees = async (): Promise<Employee[]> => {
-    const response = await fetch("http://localhost:3500/employees");
+const fetchEmployees = async (id): Promise<Employee[]> => {
+    const endpoint =
+        id === "all"
+            ? "http://localhost:3500/employees"
+            : `http://localhost:3500/employees?cafe=${id}`;
+    const response = await fetch(endpoint);
     if (!response.ok) {
         throw new Error("Error fetching employees");
     }
@@ -34,12 +40,16 @@ const fetchCafes = async (): Promise<any[]> => {
 };
 
 const EmployeesPage: React.FC = () => {
+    const { id } = route.useParams();
     // Use the useQuery hook to fetch and cache employees data
     const {
         data: employees,
         error,
         isLoading,
-    } = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
+    } = useQuery({
+        queryKey: ["employees"],
+        queryFn: () => fetchEmployees(id),
+    });
     const {
         data: cafes,
         error: cafesError,
@@ -214,6 +224,4 @@ const EmployeesPage: React.FC = () => {
     );
 };
 
-export const Route = createFileRoute("/employee")({
-    component: EmployeesPage,
-});
+export default EmployeesPage;
