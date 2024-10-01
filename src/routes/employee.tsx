@@ -1,7 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
+import { Button } from "@mui/material";
+import EmployeeFormDialog from "../components/EmployeeFormDialog";
 
 // Define the interface for an Employee
 interface Employee {
@@ -21,6 +23,15 @@ const fetchEmployees = async (): Promise<Employee[]> => {
     return response.json();
 };
 
+// Fetcher function to get cafes for dropdown
+const fetchCafes = async (): Promise<any[]> => {
+    const response = await fetch("http://localhost:3500/cafes");
+    if (!response.ok) {
+        throw new Error("Error fetching cafes");
+    }
+    return response.json();
+};
+
 const EmployeesPage: React.FC = () => {
     // Use the useQuery hook to fetch and cache employees data
     const {
@@ -28,6 +39,28 @@ const EmployeesPage: React.FC = () => {
         error,
         isLoading,
     } = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
+    const {
+        data: cafes,
+        error: cafesError,
+        isLoading: isLoadingCafes,
+    } = useQuery({ queryKey: ["cafes"], queryFn: fetchCafes });
+
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+        null
+    );
+
+    const queryClient = useQueryClient();
+
+    // Employee Form Dialog
+    const [openEmployeeDialog, setOpenEmployeeDialog] = useState(false);
+    const handleOpenDialog = (employee?: Employee | null) => {
+        setSelectedEmployee(employee || null);
+        setOpenEmployeeDialog(true);
+    };
+    const handleCloseDialog = () => {
+        setOpenEmployeeDialog(false);
+        setSelectedEmployee(null);
+    };
 
     // Define columns for the AG Grid
     const columnDefs = useMemo(
@@ -64,8 +97,47 @@ const EmployeesPage: React.FC = () => {
         console.log("Delete clicked for ID:", id);
     };
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error instanceof Error) return <div>Error: {error.message}</div>;
+    // Handle form submission for adding or editing an employee
+    const handleFormSubmit = async (data: any) => {
+        const endpoint = "http://localhost:3500/employees";
+        const method = selectedEmployee ? "PUT" : "POST";
+        console.log(data);
+        try {
+            const response = await fetch(endpoint, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: data.name,
+                    email_address: data.email_address,
+                    phone_number: data.phone_number,
+                    gender: data.gender,
+                    cafe: data.assignedCafe,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to submit employee");
+            }
+
+            // Refetch the employee data after adding or updating
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+        } catch (error) {
+            console.error("Error:", error);
+        }
+
+        setOpenEmployeeDialog(false);
+        setSelectedEmployee(null);
+    };
+
+    if (isLoading || isLoadingCafes) return <div>Loading...</div>;
+    if (error instanceof Error || cafesError instanceof Error)
+        return (
+            <div>
+                Error: {error?.message} {cafesError?.message}
+            </div>
+        );
 
     return (
         <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
@@ -74,6 +146,20 @@ const EmployeesPage: React.FC = () => {
                 rowData={employees}
                 columnDefs={columnDefs}
                 domLayout="autoHeight"
+            />
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleOpenDialog(null)}
+            >
+                Add New Employee
+            </Button>
+            <EmployeeFormDialog
+                open={openEmployeeDialog}
+                onClose={handleCloseDialog}
+                onSubmit={handleFormSubmit}
+                cafes={cafes} // Pass cafes to the form dropdown
+                employeeData={selectedEmployee} // Pass selected employee for editing
             />
         </div>
     );
