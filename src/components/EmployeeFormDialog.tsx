@@ -58,8 +58,21 @@ const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         onClose(); // Close the dialog
     };
 
+    const handleCloseDialog = () => {
+        console.log("hi");
+        if (
+            confirm(
+                "Are you sure you want to quit? You will lose unsaved changes!"
+            ) === false
+        ) {
+            return;
+        } else {
+            onClose();
+        }
+    };
+
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={handleCloseDialog}>
             <DialogTitle>
                 {employeeData ? "Edit Employee" : "Add New Employee"}
             </DialogTitle>
@@ -152,7 +165,7 @@ const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={onClose} color="secondary">
+                    <Button onClick={handleCloseDialog} color="secondary">
                         Cancel
                     </Button>
                     <Button type="submit" color="primary">

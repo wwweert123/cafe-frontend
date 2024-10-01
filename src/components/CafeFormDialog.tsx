@@ -74,8 +74,21 @@ const CafeFormDialog: React.FC<CafeFormDialogProps> = ({
         onClose(); // Close the dialog
     };
 
+    const handleCloseDialog = () => {
+        console.log("hi");
+        if (
+            confirm(
+                "Are you sure you want to quit? You will lose unsaved changes!"
+            ) === false
+        ) {
+            return;
+        } else {
+            onClose();
+        }
+    };
+
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={handleCloseDialog}>
             <DialogTitle>{cafeData ? "Edit Café" : "Add New Café"}</DialogTitle>
             <form onSubmit={handleSubmit(onFormSubmit)}>
                 <DialogContent>
@@ -141,7 +154,7 @@ const CafeFormDialog: React.FC<CafeFormDialogProps> = ({
                 </DialogContent>
                 <DialogActions>
                     {/* Cancel Button */}
-                    <Button onClick={onClose} color="secondary">
+                    <Button onClick={handleCloseDialog} color="secondary">
                         Cancel
                     </Button>
                     {/* Submit Button */}
