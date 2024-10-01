@@ -1,15 +1,23 @@
 import React, { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
 import { Button } from "@mui/material";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import CafeFormDialog from "../components/CafeFormDialog";
+import DeleteConfirmationDialog from "../components/DeleteConfirmationDialog";
 
 // Define the interface for a Cafe
 interface Cafe {
     id: string;
+    name: string;
+    description: string;
+    location: string;
+    logo?: string; // Optional logo field
+}
+
+interface CafeFormData {
     name: string;
     description: string;
     location: string;
@@ -36,15 +44,55 @@ const CafeComponent: React.FC = () => {
         queryFn: fetchCafes,
     });
 
-    // Form Dialog
-    const [openDialog, setOpenDialog] = useState(false);
+    const queryClient = useQueryClient();
 
-    const handleOpenDialog = () => setOpenDialog(true);
-    const handleCloseDialog = () => setOpenDialog(false);
+    // Cafe Form Dialog
+    const [openCafeDialog, setOpenCafeDialog] = useState(false);
 
-    const handleFormSubmit = (data: any) => {
+    const handleOpenDialog = (cafe?: any) => {
+        setSelectedCafe(cafe || null);
+        setOpenCafeDialog(true);
+    };
+    const handleCloseDialog = () => {
+        setOpenCafeDialog(false);
+        setSelectedCafe(null);
+    };
+
+    // Handle form submission to send only name, description, and location
+    const handleFormSubmit = async (data: CafeFormData) => {
         console.log("Form Submitted:", data);
-        // Handle POST or PUT request here based on data
+        console.log(selectedCafe);
+
+        const endpoint = "http://127.0.0.1:3500/cafes";
+        const method = selectedCafe?.id ? "PUT" : "POST";
+
+        try {
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json", // Sending data as JSON
+                },
+                body: JSON.stringify({
+                    id: selectedCafe ? selectedCafe.id : null,
+                    name: data.name,
+                    description: data.description,
+                    location: data.location,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to submit café");
+            }
+
+            console.log("Café created/updated successfully");
+            queryClient.invalidateQueries({ queryKey: ["cafes"] });
+        } catch (error) {
+            console.error("Error:", error);
+        }
+
+        // Close the dialog after submission
+        setOpenCafeDialog(false);
+        setSelectedCafe(null);
     };
 
     // Define columns for the AG Grid
@@ -72,10 +120,10 @@ const CafeComponent: React.FC = () => {
                 headerName: "Actions",
                 cellRenderer: (params: { data: Cafe }) => (
                     <div>
-                        <button onClick={() => handleEdit(params.data)}>
+                        <button onClick={() => handleOpenDialog(params.data)}>
                             Edit
                         </button>
-                        <button onClick={() => handleDelete(params.data.id)}>
+                        <button onClick={() => handleDeleteClick(params.data)}>
                             Delete
                         </button>
                     </div>
@@ -90,8 +138,39 @@ const CafeComponent: React.FC = () => {
         console.log("Edit clicked for:", data);
     };
 
-    const handleDelete = (id: string) => {
-        console.log("Delete clicked for ID:", id);
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
+
+    // Open the delete confirmation dialog
+    const handleDeleteClick = (cafe: Cafe) => {
+        setSelectedCafe(cafe);
+        setOpenDeleteDialog(true); // Open the dialog when delete button is clicked
+    };
+
+    // Handle the actual deletion
+    const handleDeleteConfirm = async () => {
+        if (!selectedCafe) return;
+
+        try {
+            const response = await fetch(
+                `http://127.0.0.1:3500/cafes/${selectedCafe.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to delete café");
+            }
+
+            // Refetch the cafes after successful deletion
+            queryClient.invalidateQueries({ queryKey: ["cafes"] });
+        } catch (error) {
+            console.error("Error:", error);
+        }
+
+        setOpenDeleteDialog(false); // Close the dialog
+        setSelectedCafe(null); // Clear selected café
     };
 
     if (isLoading) return <div>Loading...</div>;
@@ -114,15 +193,22 @@ const CafeComponent: React.FC = () => {
             <Button
                 variant="contained"
                 color="primary"
-                onClick={handleOpenDialog}
+                onClick={() => handleOpenDialog(null)}
             >
                 Add New Café
             </Button>
             {/* Form Dialog for adding/editing a café */}
             <CafeFormDialog
-                open={openDialog}
+                open={openCafeDialog}
                 onClose={handleCloseDialog}
                 onSubmit={handleFormSubmit}
+                cafeData={selectedCafe}
+            />
+            <DeleteConfirmationDialog
+                open={openDeleteDialog}
+                onClose={() => setOpenDeleteDialog(false)}
+                onConfirm={handleDeleteConfirm}
+                itemName={selectedCafe ? selectedCafe.name : "Café"}
             />
         </div>
     );

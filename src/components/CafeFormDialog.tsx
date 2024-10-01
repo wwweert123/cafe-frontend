@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Dialog,
     DialogActions,
@@ -14,16 +14,17 @@ import { useForm } from "react-hook-form";
 interface CafeFormDialogProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data: CafeFormData) => void;
-    cafeData?: CafeFormData; // Optional for editing existing cafe
+    onSubmit: (data: Cafe) => Promise<void>;
+    cafeData?: Cafe | null; // Optional for editing existing cafe
 }
 
 // Interface for form data
-interface CafeFormData {
+interface Cafe {
+    id: string;
     name: string;
     description: string;
     location: string;
-    logo?: File | null;
+    logo?: string; // Optional logo field
 }
 
 const CafeFormDialog: React.FC<CafeFormDialogProps> = ({
@@ -37,16 +38,23 @@ const CafeFormDialog: React.FC<CafeFormDialogProps> = ({
         handleSubmit,
         formState: { errors },
         reset,
-    } = useForm<CafeFormData>({
+    } = useForm<Cafe>({
         defaultValues: cafeData || {
             name: "",
             description: "",
             location: "",
-            logo: null,
+            logo: "",
         },
     });
 
     const [logoError, setLogoError] = useState("");
+
+    useEffect(() => {
+        // Reset form fields with existing café data when dialog is opened for editing
+        if (cafeData) {
+            reset(cafeData);
+        }
+    }, [cafeData, reset]);
 
     // Validate logo file size (max 2MB)
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +67,7 @@ const CafeFormDialog: React.FC<CafeFormDialogProps> = ({
     };
 
     // Handle form submission
-    const onFormSubmit = (data: CafeFormData) => {
+    const onFormSubmit = (data: Cafe) => {
         if (logoError) return; // If there is a logo error, do not proceed
         onSubmit(data); // Call the submit handler
         reset(); // Reset the form
