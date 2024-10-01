@@ -1,9 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
+import { Button } from "@mui/material";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import CafeFormDialog from "../components/CafeFormDialog";
 
 // Define the interface for a Cafe
 interface Cafe {
@@ -33,6 +35,17 @@ const CafeComponent: React.FC = () => {
         queryKey: ["cafes"],
         queryFn: fetchCafes,
     });
+
+    // Form Dialog
+    const [openDialog, setOpenDialog] = useState(false);
+
+    const handleOpenDialog = () => setOpenDialog(true);
+    const handleCloseDialog = () => setOpenDialog(false);
+
+    const handleFormSubmit = (data: any) => {
+        console.log("Form Submitted:", data);
+        // Handle POST or PUT request here based on data
+    };
 
     // Define columns for the AG Grid
     const columnDefs = useMemo(
@@ -98,6 +111,19 @@ const CafeComponent: React.FC = () => {
                     domLayout="autoHeight"
                 />
             </div>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenDialog}
+            >
+                Add New Café
+            </Button>
+            {/* Form Dialog for adding/editing a café */}
+            <CafeFormDialog
+                open={openDialog}
+                onClose={handleCloseDialog}
+                onSubmit={handleFormSubmit}
+            />
         </div>
     );
 };
