@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
     Dialog,
     DialogActions,
@@ -6,28 +6,25 @@ import {
     DialogTitle,
     TextField,
     Button,
-    FormControl,
-    InputLabel,
     RadioGroup,
-    Select,
     FormControlLabel,
     Radio,
+    FormControl,
+    InputLabel,
+    Select,
     MenuItem,
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 
-// Interface for the form data
 interface EmployeeFormDialogProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data: EmployeeFormData) => Promise<void>;
-    cafes: Array<{ id: string; name: string }>; // List of cafes for the dropdown
-    employeeData?: EmployeeFormData | null; // Optional for editing existing cafe
+    onSubmit: (data: EmployeeFormData) => void;
+    cafes: Array<{ _id: string; name: string }>; // List of cafes for the dropdown
+    employeeData?: EmployeeFormData; // Optional for editing existing employee
 }
 
-// Interface for form data
 interface EmployeeFormData {
-    id: string;
     name: string;
     email_address: string;
     phone_number: string;
@@ -45,29 +42,19 @@ const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     const {
         register,
         handleSubmit,
-        formState: { errors },
         reset,
-    } = useForm<EmployeeFormData>({
-        defaultValues: employeeData || {
-            name: "",
-            email_address: "",
-            phone_number: "",
-            gender: "Male",
-        },
-    });
+        formState: { errors },
+    } = useForm<EmployeeFormData>();
 
     useEffect(() => {
-        // Reset form fields with existing café data when dialog is opened for editing
         if (employeeData) {
-            reset(employeeData);
+            reset(employeeData); // Reset the form with employee data when editing
         }
     }, [employeeData, reset]);
 
-    // Handle form submission
     const onFormSubmit = (data: EmployeeFormData) => {
-        console.log("hi");
-        onSubmit(data); // Call the submit handler
-        reset(); // Reset the form
+        onSubmit(data);
+        reset(); // Reset form after submission
         onClose(); // Close the dialog
     };
 
@@ -156,13 +143,14 @@ const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                             defaultValue={employeeData?.assignedCafe || ""}
                         >
                             {cafes.map((cafe) => (
-                                <MenuItem key={cafe.id} value={cafe.id}>
+                                <MenuItem key={cafe._id} value={cafe._id}>
                                     {cafe.name}
                                 </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
                 </DialogContent>
+
                 <DialogActions>
                     <Button onClick={onClose} color="secondary">
                         Cancel
