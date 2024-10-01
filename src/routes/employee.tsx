@@ -74,12 +74,19 @@ const EmployeesPage: React.FC = () => {
             { headerName: "Email Address", field: "email_address" },
             { headerName: "Phone Number", field: "phone_number" },
             { headerName: "Days Worked", field: "days_worked" },
-            { headerName: "Café Name", field: "cafe_name" },
+            {
+                headerName: "Café Name",
+                field: "cafe.name", // Display the café name, assuming the cafe field is populated with the 'name'
+                valueGetter: (params: any) =>
+                    params.data.cafe
+                        ? params.data.cafe.name
+                        : "No Café Assigned",
+            },
             {
                 headerName: "Actions",
                 cellRenderer: (params: any) => (
                     <div>
-                        <button onClick={() => handleEdit(params.data)}>
+                        <button onClick={() => handleOpenDialog(params.data)}>
                             Edit
                         </button>
                         <button
@@ -111,6 +118,7 @@ const EmployeesPage: React.FC = () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
+                    id: selectedEmployee ? selectedEmployee.id : null,
                     name: data.name,
                     email_address: data.email_address,
                     phone_number: data.phone_number,
