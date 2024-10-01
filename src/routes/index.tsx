@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
-import { Button } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import CafeFormDialog from "../components/CafeFormDialog";
@@ -114,7 +114,24 @@ const CafeComponent: React.FC = () => {
             },
             { headerName: "Name", field: "name" },
             { headerName: "Description", field: "description" },
-            { headerName: "Employees", field: "employees" },
+            {
+                headerName: "Employees",
+                cellRenderer: (params: any) => (
+                    <Stack direction="row" spacing={2} justifyItems="center">
+                        <Typography>{params.data.employees}</Typography>
+                        <Link
+                            to="/employee/$id"
+                            params={{
+                                id: params.data._id,
+                            }}
+                        >
+                            <Button variant="contained" color="primary">
+                                View Employee
+                            </Button>
+                        </Link>
+                    </Stack>
+                ),
+            },
             { headerName: "Location", field: "location" },
             {
                 headerName: "Actions",
